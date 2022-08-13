@@ -10,7 +10,9 @@ const path = require("path");
 app.get("/:file", (req, res) => {
   res.sendFile(path.join(__dirname, req.params.file));
 });
-
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
+});
 app.get("/:path/:file", (req, res) => {
   res.sendFile(path.join(__dirname + "/" + req.params.path, req.params.file));
 });
