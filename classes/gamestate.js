@@ -24,7 +24,7 @@ class GameState {
   static loadModels(name) {
     return new Promise((resolve) => {
       loader.load(
-        `./${name}.glb`,
+        `./3dmodels/${name}.glb`,
         //"https://s3-us-west-2.amazonaws.com/s.cdpn.io/39255/ladybug.gltf",
         function (data) {
           var object = data.scene;

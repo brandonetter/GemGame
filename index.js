@@ -10,8 +10,9 @@ const path = require("path");
 app.get("/:file", (req, res) => {
   res.sendFile(path.join(__dirname, req.params.file));
 });
-app.get("/textures/:file", (req, res) => {
-  res.sendFile(path.join(__dirname + "/textures", req.params.file));
+
+app.get("/:path/:file", (req, res) => {
+  res.sendFile(path.join(__dirname + "/" + req.params.path, req.params.file));
 });
 
 //User info is held inside of the socket object associated with that connection.

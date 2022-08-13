@@ -29,9 +29,9 @@
       referrerpolicy="no-referrer"
     ></script>
 
-    <script src="gamestate.js"></script>
-    <script src="points.js"></script>
-    <script src="gem.js"></script>
+    <script src="/classes/gamestate.js"></script>
+    <script src="/classes/points.js"></script>
+    <script src="/classes/gem.js"></script>
 
     <script>
       const loader = new THREE.GLTFLoader();
@@ -138,7 +138,7 @@
       let backgroundModel;
       function loadBackground() {
         return new Promise((resolve) => {
-          loader.load(`./room.glb`, function (data) {
+          loader.load(`./3dmodels/room.glb`, function (data) {
             backgroundModel = data.scene;
             backgroundModel.scale.set(30, 30, 30);
             backgroundModel.translateY(-200);
@@ -253,20 +253,20 @@
       function loadSounds() {
         GameState.lockScreen = false;
         soundSelect = new Howl({
-          src: ["sfx_sounds_interaction1.wav"],
+          src: ["/sounds/sfx_sounds_interaction1.wav"],
           volume: 0.3,
         });
         soundPing = new Howl({
-          src: ["sfx_coin_single2.wav"],
+          src: ["/sounds/sfx_coin_single2.wav"],
           volume: 0.3,
         });
         soundCollect = new Howl({
-          src: ["sfx_coin_double5.wav"],
+          src: ["/sounds/sfx_coin_double5.wav"],
           volume: 0.1,
           rate: 1.4,
         });
         soundDeselect = new Howl({
-          src: ["sfx_sound_neutral6.wav"],
+          src: ["/sounds/sfx_sound_neutral6.wav"],
           volume: 0.2,
         });
         document.getElementById("points").innerHTML =
