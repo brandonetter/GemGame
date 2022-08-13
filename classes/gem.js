@@ -44,6 +44,7 @@ class Gem {
 
     mesh.callback = async function () {
       if (this.type === "done") {
+        if (GameState.lockScreen) return;
         soundSelect.play();
 
         setTimeout(() => (this.type = "collected"), 1600);
