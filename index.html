@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>three.js webgl - geometry - cube</title>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <script
+      async
+      src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"
+    ></script>
+
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r99/three.min.js"
+      integrity="sha512-0tlhMhMGPohLm/YwaskxH7jJuUGqU/XPTl+HE0dWrhGbpEBRIZYMQdbHC0CmyNPzZKTBd8JoVZnvMcL7hzlFOg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script src="https://rawcdn.githack.com/mrdoob/three.js/r99/examples/js/loaders/GLTFLoader.js"></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"
+      integrity="sha512-6+YN/9o9BWrk6wSfGxQGpt3EUK6XeHi6yeHV+TYD2GR0Sj/cggRpXr1BrAQf0as6XslxomMUxXp2vIl+fv0QRA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+
+    <script src="gamestate.js"></script>
+    <script src="points.js"></script>
+    <script src="gem.js"></script>
+
+    <script>
+      const loader = new THREE.GLTFLoader();
+      GameState.loader = loader;
+      GameState.lockScreen = true;
+      let camera, scene, renderer;
+      let mesh;
+      let soundSelect;
+      let soundPing;
+      let soundCollect;
+      let soundDeselect;
+      let gems = [];
+
+      const COLORS = {
+        selected: new THREE.Color(0xee0000),
+        join: new THREE.Color(0xfcba03),
+        default: new THREE.Color(),
+      };
+      var raycaster = new THREE.Raycaster();
+      var mouse = new THREE.Vector2();
+
+      async function generateNewGems() {
+        let emptySpots = GameState.getListOfEmptyObs();
+        await new Promise((r) => setTimeout(r, 1000));
+        for (let ii of emptySpots) {
+          await new Promise((r) =>
+            setTimeout(r, 200 / (emptySpots.indexOf(ii) / 2))
+          );
+          let mesh = Gem.generateGem(ii);
+          scene.add(mesh);
+        }
+        GameState.lockScreen = false;
+      }
+      function onDocumentMouseDown(event) {
+        if (GameState.lockScreen) return;
+        event.preventDefault();
+
+        mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
+        mouse.y = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+
+        var intersects = raycaster.intersectObjects(scene.children, true);
+
+        if (intersects.length > 0) {
+          if (intersects[0].object.type === "collected") {
+            GameState.selectedObjects = [];
+            GameState.checkPoints = [];
+            return;
+          }
+
+          intersects[0].object.callback();
+          let x = intersects[0].object.x;
+          let y = intersects[0].object.y;
+
+          if (
+            GameState.checkPoints.some((v, i) => {
+              if (v[0] == x && v[1] == y) {
+                GameState.checkPoints.splice(i, 1);
+                GameState.selectedObjects.splice(i, 1);
+                return true;
+              }
+            })
+          ) {
+            soundDeselect.play();
+            intersects[0].object.selected = false;
+          } else {
+            let sameType = true;
+            for (let i of GameState.selectedObjects) {
+              if (i.type != intersects[0].object.type) {
+                sameType = false;
+              }
+            }
+            if (sameType) {
+              GameState.checkPoints.push([x, y]);
+              GameState.selectedObjects.push(intersects[0].object);
+            } else {
+              intersects[0].object.selected = false;
+            }
+          }
+
+          if (GameState.checkPoints.length === 3) {
+            let listOfX = GameState.checkPoints.map((v) => v[0]);
+            let deltaX = Math.max(...listOfX) - Math.min(...listOfX);
+            let listOfY = GameState.checkPoints.map((v) => v[1]);
+            let deltaY = Math.max(...listOfY) - Math.min(...listOfY);
+
+            deltaX + deltaY === 2 ? (isvalid = "Valid") : (isvalid = "Invalid");
+
+            for (let i of GameState.selectedObjects) {
+              i.selected = false;
+              if (isvalid === "Valid") {
+                i.material.color = COLORS.join;
+                i.type = "done";
+              }
+            }
+            GameState.selectedObjects = [];
+            GameState.checkPoints = [];
+          }
+        }
+      }
+      document.addEventListener("mousedown", onDocumentMouseDown, false);
+
+      let backgroundModel;
+      function loadBackground() {
+        return new Promise((resolve) => {
+          loader.load(`./room.glb`, function (data) {
+            backgroundModel = data.scene;
+            backgroundModel.scale.set(30, 30, 30);
+            backgroundModel.translateY(-200);
+            backgroundModel.translateZ(-800);
+
+            backgroundModel.rotation.y -= 20;
+            scene.add(backgroundModel);
+          });
+        });
+      }
+
+      async function main() {
+        await GameState.loadGems();
+        loadBackground();
+        init();
+        animate();
+      }
+
+      function init() {
+        let width = window.innerWidth * 1.4;
+        let height = window.innerHeight * 1.4;
+        camera = new THREE.OrthographicCamera(
+          width / -5.5,
+          width / 5.5,
+          height / 5.5,
+          height / -5.5,
+          120,
+          1400
+        );
+
+        camera.position.z = 200;
+
+        scene = new THREE.Scene();
+        {
+          const color = 0x071122;
+          const near = 10;
+          const far = 1100;
+          scene.background = color;
+          scene.fog = new THREE.Fog(color, near, far);
+        }
+        const light = new THREE.DirectionalLight(0xffffff, 2);
+        light.position.z = 0.2;
+
+        scene.add(light);
+        const light2 = new THREE.AmbientLight(0xeeeeee);
+        scene.add(light2);
+
+        for (let i = -5; i < 5; i += 1) {
+          for (let j = -5; j < 5; j += 1) {
+            let mesh = Gem.generateGem(i, j);
+
+            scene.add(mesh);
+          }
+        }
+
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        //
+
+        window.addEventListener("resize", onWindowResize);
+      }
+
+      function onWindowResize() {
+        camera.left = window.innerWidth / -4;
+        camera.right = window.innerWidth / 4;
+        camera.top = window.innerHeight / -4;
+        camera.bottom = window.innerHeight / 4;
+
+        camera.updateProjectionMatrix();
+
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+      let timestamp = null;
+      function animate() {
+        timedif = new Date().getTime() - (timestamp || 0) || 0;
+        timestamp = new Date().getTime();
+
+        requestAnimationFrame(animate);
+        backgroundModel.rotation.y += 0.001 * Math.sin(timestamp / 10000);
+        for (let i of GameState.listOfObs) {
+          i.rotation.y += 0.005 + Math.random() / 60;
+          if (i.type == "collected") {
+            i.material.wireframe = true;
+            i.scale.x -= timedif / 100;
+            i.scale.y -= timedif / 100;
+            i.scale.z -= timedif / 100;
+            if (i.scale.x <= 0) {
+              i.type = null;
+              scene.remove(i);
+            }
+          } else if (i.selected) {
+            i.scale.x = 8 + Math.sin(timestamp / 300) * 3;
+            i.scale.y = 8 + Math.sin(timestamp / 300) * 3;
+            i.scale.z = 8 + Math.sin(timestamp / 300) * 3;
+          } else {
+            if (i.scale.x < 8) i.scale.x += timedif / 100;
+            if (i.scale.y < 8) i.scale.y += timedif / 100;
+            if (i.scale.z < 8) i.scale.z += timedif / 100;
+            if (i.scale.x > 8) i.scale.x = 8;
+            if (i.scale.y > 8) i.scale.y = 8;
+            if (i.scale.z > 8) i.scale.z = 8;
+          }
+        }
+
+        renderer.render(scene, camera);
+      }
+      main();
+      function loadSounds() {
+        GameState.lockScreen = false;
+        soundSelect = new Howl({
+          src: ["sfx_sounds_interaction1.wav"],
+          volume: 0.3,
+        });
+        soundPing = new Howl({
+          src: ["sfx_coin_single2.wav"],
+          volume: 0.3,
+        });
+        soundCollect = new Howl({
+          src: ["sfx_coin_double5.wav"],
+          volume: 0.1,
+          rate: 1.4,
+        });
+        soundDeselect = new Howl({
+          src: ["sfx_sound_neutral6.wav"],
+          volume: 0.2,
+        });
+        document.getElementById("points").innerHTML =
+          "Points:<span class='pointsNumber'>0</span>";
+      }
+      function showHowTo() {
+        document.getElementById("points").innerHTML =
+          "<h3>Select Same Colored Gems In Groups of <b>Three</b></h3>" +
+          "<img width=200 src='example.png' /><i>Groups of 3 Cannot be Diagonal</i>" +
+          "<h3>Click on Selected Groups to Collect Points</h3>" +
+          "<b>Create Groups That Touch Each Other To Collect Bonus Points!<br>" +
+          "<button onclick='loadSounds()'>Play Game</button>";
+      }
+    </script>
+
+    <div id="points">
+      <button onclick="loadSounds()">Begin Game</button>
+      <button onclick="showHowTo()">How To Play</button>
+    </div>
+  </body>
+</html>

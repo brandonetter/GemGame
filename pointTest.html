@@ -1,0 +1,60 @@
+
+<Script>
+let points =[[0,1],[1,1],[1,2]];
+let points2 = [[3,1],[4,1],[5,2]];
+let checkPoints = [];
+function drawPoints(){
+    let canvas = document.getElementById("canvas");
+    canvas.addEventListener("mousedown",(e)=>{
+        let x = Math.floor(e.clientX/10)*10;
+        let y = Math.floor(e.clientY/10)*10;
+        if(checkPoints.some((v,i)=>{
+            if(v[0] == x/10 && v[1] == y/10){
+                checkPoints.splice(i,1);
+                return true;
+            }
+
+        })){
+            console.log("removed doop");
+            ctx.fillStyle = "white";
+            ctx.fillRect(Math.floor(e.clientX/10)*10,Math.floor(e.clientY/10)*10,10,10);
+            ctx.fillStyle = "black";
+        }else{
+        checkPoints.push([x/10,y/10]);
+        console.log(`x: ${Math.floor(e.clientX/10)*10}      y: ${Math.floor(e.clientY/10)*10}`);
+        ctx.fillRect(Math.floor(e.clientX/10)*10,Math.floor(e.clientY/10)*10,10,10);
+        }//checkPoints = checkPoints.map(JSON.stringify).filter((e,i,a) => i === a.indexOf(e)).map(JSON.parse);
+        console.log(checkPoints);
+        if(checkPoints.length === 3){
+            let listOfX = checkPoints.map((v)=>v[0]);
+            let deltaX =  Math.max(...listOfX) - Math.min(...listOfX);
+            let listOfY = checkPoints.map((v)=>v[1]);
+            let deltaY = Math.max(...listOfY) - Math.min(...listOfY);
+
+            console.log("deltaX     " + deltaX);
+            console.log("deltaY     " + deltaY);
+            console.log(deltaX+deltaY===2?"Valid":"Invalid");
+            checkPoints = [];
+        }
+
+    });
+    canvas.setAttribute("width", window.innerWidth);
+    canvas.setAttribute("height", window.innerHeight);
+    canvas.setAttribute("style", "position: absolute; top:0; left:0;");
+    document.body.appendChild(canvas);
+
+    //Then you can draw a point at (10,10) like this:
+
+    var ctx = canvas.getContext("2d");
+    for(let i of points){
+        ctx.fillRect(i[0]*10,i[1]*10,10,10);
+    }
+    for(let i of points2){
+        ctx.fillRect(i[0]*10,i[1]*10,10,10);
+    }
+
+}
+</Script>
+<body onload="drawPoints()">
+<canvas id="canvas"></canvas>
+</body>

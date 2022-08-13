@@ -1,0 +1,23 @@
+.pointsNumber {
+    color: black;
+    font-size: xx-large;
+    padding: 10px;
+  }
+  #points {
+    position: absolute;
+    top: 10;
+    left: 10;
+    padding: 10px;
+    font-size: x-large;
+    color: rgb(87, 87, 87);
+    font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+    background-color: aliceblue;
+    z-index: 1;
+  }
+  canvas {
+    background-color: rgb(7, 70, 159);
+    position: absolute;
+    top: 0;
+    left: 0;
+
+  }
